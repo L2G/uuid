@@ -1,11 +1,11 @@
-source :rubygems
+source 'https://rubygems.org'
 gemspec
 
 group :development do
-  gem "rake"
-  gem "yard"
+  gem 'rake'
+  gem 'yard'
 end
 
 group :test do
-  gem "mocha"
+  gem 'mocha'
 end
