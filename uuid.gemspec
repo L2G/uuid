@@ -19,4 +19,6 @@ EOF
   s.extra_rdoc_files = ['README.rdoc', 'MIT-LICENSE']
 
   s.add_dependency 'macaddr', ['~>1.0']
+
+  s.add_development_dependency 'bundler', '~> 1.7'
 end
