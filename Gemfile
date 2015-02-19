@@ -7,5 +7,5 @@ group :development do
 end
 
 group :test do
-  gem 'mocha'
+  gem 'mocha', '~> 1.0'
 end

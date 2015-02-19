@@ -9,7 +9,9 @@ GEM
   specs:
     macaddr (1.7.1)
       systemu (~> 2.6.2)
-    mocha (0.9.12)
+    metaclass (0.0.4)
+    mocha (1.0.0)
+      metaclass (~> 0.0.1)
     rake (0.8.7)
     systemu (2.6.4)
     yard (0.6.7)
@@ -19,7 +21,7 @@ PLATFORMS
 
 DEPENDENCIES
   bundler (~> 1.7)
-  mocha
+  mocha (~> 1.0)
   rake
   uuid!
   yard
