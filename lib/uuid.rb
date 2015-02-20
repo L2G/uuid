@@ -84,7 +84,7 @@ class UUID
 
   ##
   # Version number stamped into the UUID to identify it as time-based.
-  VERSION_CLOCK = 0x0100
+  VERSION_CLOCK = 0x1000
 
   ##
   # Formats supported by the UUID generator.
@@ -320,7 +320,7 @@ class UUID
         clock        & 0xFFFFFFFF,
        (clock >> 32) & 0xFFFF,
       ((clock >> 48) & 0xFFFF | VERSION_CLOCK),
-      @sequence      & 0xFFFF,
+      @sequence      & 0x3FFF | 0x8000, # RFC 4122 "variant" bits
       @mac           & 0xFFFFFFFFFFFF
     ]
   end

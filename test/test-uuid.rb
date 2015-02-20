@@ -153,5 +153,15 @@ class TestUUID < Test::Unit::TestCase
     validate_uuid_generator(uuid_gen)
   end
 
+  def test_rfc_4122_bits
+    uuid_gen = UUID.new
+    uuid = uuid_gen.generate(:compact).hex
+
+    uuid_version = uuid & 0x00000000_0000_F000_0000_000000000000
+    assert_equal 0x00000000_0000_1000_0000_000000000000, uuid_version
+
+    uuid_variant = uuid & 0x00000000_0000_0000_C000_000000000000
+    assert_equal 0x00000000_0000_0000_8000_000000000000, uuid_variant
+  end
 end
 
