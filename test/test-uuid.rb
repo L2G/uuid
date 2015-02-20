@@ -7,9 +7,17 @@
 require 'rubygems'
 require 'test/unit'
 require 'mocha/test_unit'
+require 'timecop'
 require 'uuid'
 
+Timecop.safe_mode = true
+
 class TestUUID < Test::Unit::TestCase
+
+  # This is an AND bitmask for the significant timestamp bits in
+  # a UUID.  Note the "E" in there to mask out the least-significant
+  # bit in the timestamp, to allow for typical imprecision in Ruby time.
+  TIMESTAMP_MASK = 0xFFFFFFFE_FFFF_0FFF_0000_000000000000
 
   def test_state_file_creation
     path = UUID.state_file
@@ -162,6 +170,44 @@ class TestUUID < Test::Unit::TestCase
 
     uuid_variant = uuid & 0x00000000_0000_0000_C000_000000000000
     assert_equal 0x00000000_0000_0000_8000_000000000000, uuid_variant
+  end
+
+  def test_rfc_4122_timestamp_epoch
+    # RFC 4122's epoch is 15 October 1582, midnight UTC.  (This in spite of the
+    # fact that there was no UTC until the 1960s.) ;-)
+    Timecop.freeze(Time.utc(1582, 10, 15)) do
+      uuid_timestamp = UUID.generate(:compact).hex & TIMESTAMP_MASK
+      assert_equal '00000000000000000000000000000000',
+                   format('%032x', uuid_timestamp)
+    end
+  end
+
+  def test_rfc_4122_timestamp_space_1999
+    # September 13, 1999, midnight: 131,564,736,000,000,000 ticks (@ 100 ns)
+    # = 0x1d3696e2a3f8000 -> 2A3F8000-696E-.1D3-....-............
+    Timecop.freeze(Time.utc(1999, 9, 13)) do
+      uuid_timestamp = UUID.generate(:compact).hex & TIMESTAMP_MASK
+      assert_equal '2a3f8000696e01d30000000000000000',
+                   format('%032x', uuid_timestamp)
+    end
+  end
+
+  def test_rfc_4122_timestamp_max
+    # Maximum time before timestamp wraps around is 31 March 5236,
+    # 21:21:00.6846975 UTC
+    Timecop.freeze(Time.utc(5236, 3, 31, 21, 21) + 0.6846975) do
+      uuid_timestamp = UUID.generate(:compact).hex & TIMESTAMP_MASK
+      assert_equal format('%032x', TIMESTAMP_MASK),
+                   format('%032x', uuid_timestamp)
+    end
+  end
+
+  def test_rfc_4122_timestamp_wraparound
+    Timecop.freeze(Time.utc(5236, 3, 31, 21, 21) + 0.6846976) do
+      uuid_timestamp = UUID.generate(:compact).hex & TIMESTAMP_MASK
+      assert_equal '00000000000000000000000000000000',
+                   format('%032x', uuid_timestamp)
+    end
   end
 end
 

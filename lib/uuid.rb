@@ -73,16 +73,6 @@ class UUID
   VERSION = Version::STRING
 
   ##
-  # Clock multiplier. Converts Time (resolution: seconds) to UUID clock
-  # (resolution: 10ns)
-  CLOCK_MULTIPLIER = 10000000
-
-  ##
-  # Clock gap is the number of ticks (resolution: 10ns) between two Ruby Time
-  # ticks.
-  CLOCK_GAPS = 100000
-
-  ##
   # Version number stamped into the UUID to identify it as time-based.
   VERSION_CLOCK = 0x1000
 
@@ -255,7 +245,7 @@ class UUID
   # Create a new UUID generator.  You really only need to do this once.
   def initialize
     @drift = 0
-    @last_clock = (Time.now.to_f * CLOCK_MULTIPLIER).to_i
+    @last_clock = ticks_now
     @mutex = Mutex.new
 
     state_file = self.class.state_file
@@ -296,7 +286,7 @@ class UUID
     # with the new clock.
 
     clock = @mutex.synchronize do
-      clock = (Time.new.to_f * CLOCK_MULTIPLIER).to_i & 0xFFFFFFFFFFFFFFF0
+      clock = ticks_now
 
       if clock > @last_clock then
         @drift = 0
@@ -319,7 +309,7 @@ class UUID
     template % [
         clock        & 0xFFFFFFFF,
        (clock >> 32) & 0xFFFF,
-      ((clock >> 48) & 0xFFFF | VERSION_CLOCK),
+      ((clock >> 48) & 0x0FFF | VERSION_CLOCK),
       @sequence      & 0x3FFF | 0x8000, # RFC 4122 "variant" bits
       @mac           & 0xFFFFFFFFFFFF
     ]
@@ -347,13 +337,19 @@ class UUID
       write_state io
     end
   ensure
-    @last_clock = (Time.now.to_f * CLOCK_MULTIPLIER).to_i
+    @last_clock = ticks_now
     @drift = 0
   end
 
   def inspect
     mac = ("%012x" % @mac).scan(/[0-9a-f]{2}/).join(':')
     "MAC: #{mac}  Sequence: #{@sequence}"
+  end
+
+  # The number of 100-ns clock ticks since the RFC 4122 epoch, used as the timestamp
+  # value.
+  def ticks_now
+    raw_ticks - rfc_4122_epoch
   end
 
 protected
@@ -500,4 +496,18 @@ protected
 
   end
 
+private
+
+  # Convert the given time to an integer value of 100-ns ticks; use the current
+  # time by default
+  def raw_ticks(t = nil)
+    t ||= Time.now
+    t.tv_sec * 10_000_000 + t.tv_nsec / 100
+  end
+
+  # The {#raw_ticks} value for the RFC 4122 epoch: 15 October 1582,
+  # 00:00:00.0000000 UTC.
+  def rfc_4122_epoch
+    @rfc_4122_epoch ||= raw_ticks(Time.utc(1582, 10, 15)) # UTC!
+  end
 end
